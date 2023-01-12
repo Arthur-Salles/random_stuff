@@ -1,6 +1,7 @@
 import pygame 
 from pygame.locals import *
 import time
+from random import randint
 
 IMG_SIZE = 40
 
@@ -12,8 +13,10 @@ class Game:
         pygame.init()
         self.screen = pygame.display.set_mode((1000, 800))
         self.screen.fill((140, 68, 98))
-        self.player = Entity(self.screen)
+        self.player = Snake(self.screen)
         self.player.render_obj()
+        self.wheys = Whey(self.screen)
+        # self.wheys.render_obj()
 
 
     def run(self):
@@ -26,28 +29,63 @@ class Game:
             for event in pygame.event.get():
 
                 if event.type == KEYDOWN:
-                    print(event.key)
                     move_foo = keys.get(event.key, False)
                     if move_foo:
                         move_foo()
                         self.player.render_obj()
+                        # self.wheys.render_obj()
 
                     if event.key == K_ESCAPE:
                         status = False
                     
                     last_direction = event.key
             
-            self.player.auto_walk(last_direction)
-            time.sleep(0.3)
+            # self.player.auto_walk(last_direction)
+            # self.wheys.render_obj()
+            time.sleep(0.9)
+
+
 
 class Entity:
 
-    def __init__(self, screen, src='snake/resources/me.png', x=15, y=15, length=3):
-        self.x = [IMG_SIZE]*length
-        self.y = [IMG_SIZE]*length
+    def __init__(self, screen, src='snake/resources/me.png', x=15, y=15):
+        self.x = x
+        self.y = y
         self.screen = screen
         self.texture = pygame.image.load(src).convert()
+
+    def render_obj(self):
+        self.screen.fill((140, 68, 98))    
+        self.screen.blit(self.texture, (self.x, self.y))
+        pygame.display.flip()
+
+    def compare_pos(self, x1, y1):
+        return self.x == x1 and self.y == y1
+
+
+class Whey(Entity):
+    def __init__(self, screen, src='snake/resources/whey.png', x=4, y=4):
+        
+        x = randint(1, 250) * x
+        y = randint(1, 200) * y
+
+        super().__init__(screen, src, x, y)
+
+
+    
+
+class Snake(Entity):
+
+    def __init__(self, screen, src='snake/resources/me.png', x=15, y=15, length=3):
+        super().__init__(screen, src, [IMG_SIZE] * length, [IMG_SIZE] * length)
         self.snake_size = length
+
+    def render_obj(self):
+        self.screen.fill((140, 68, 98))
+        for i in range(self.snake_size):
+            self.screen.blit(self.texture, (self.x[i], self.y[i]))
+
+        pygame.display.flip()
 
     ## yeah this makes not using a if to selection but feels cluncky right?
     def move_d(self, dx=10):
@@ -55,7 +93,6 @@ class Entity:
         for i in range(self.snake_size - 1, 0, -1):
             self.x[i] = self.x[i-1]
             self.y[i] = self.y[i-1]
-
 
     def move_a(self, dx=10):
         self.x[0] -= dx
@@ -76,22 +113,12 @@ class Entity:
             self.y[i] = self.y[i-1]
     ## 
 
-    def render_obj(self):
-        self.screen.fill((140, 68, 98))
-        for i in range(self.snake_size):
-            self.screen.blit(self.texture, (self.x[i], self.y[i]))
-        pygame.display.flip()
-
 
     def auto_walk(self, key): 
         move_foo = keys.get(key, False)
         if move_foo:
             move_foo(dx=25)
             self.render_obj()
-
-    def get_pos(self):
-        return self.x , self.y
-
 
 if __name__ == "__main__":
 
