@@ -3,8 +3,11 @@ from pygame.locals import *
 import time
 from random import randint
 
-IMG_SIZE = 40
-SCREEN_SIZE = 600
+IMG_SIZE = 50
+SCREEN_SIZE = 800
+# BACKGROUND_COLOR = (50,90,23)
+BACKGROUND_COLOR = (0,0,0)
+
 
 def foo(a):
     print(a)
@@ -18,9 +21,9 @@ class Game:
         self.player.render_obj()
         self.wheys = Whey(self.screen)
         self.wheys.render_obj()
+        self.score = 0
 
-
-    def main_menu(self):
+    def main_menu(self, is_lost=False):
         
         pygame.font.init()
 
@@ -29,6 +32,10 @@ class Game:
 
         myfont = pygame.font.SysFont("monospace", 20)
         intro_text = "Press F1 to start or ESC to leave"
+
+        if is_lost:
+            intro_text = f"Game Over! Score: {self.score}"
+
         label = myfont.render(intro_text, 1, (255,255,255))
 
         text_rect = label.get_rect(center=(SCREEN_SIZE/2, SCREEN_SIZE/2))
@@ -42,11 +49,15 @@ class Game:
                 if event.type == KEYDOWN:
                     
                     if event.key == K_F1:
-                        return True   
+                        return not is_lost  
                     
                     if event.key == K_ESCAPE:
                         return False
 
+    def show_score(self):
+        font = pygame.font.SysFont("monospace", 20)
+        score = font.render(f"Score : {self.score}", 1, (255,255,255))
+        self.screen.blit(score, (SCREEN_SIZE * 0.8, 0))
 
 
     def run(self, main_passed):
@@ -68,18 +79,24 @@ class Game:
 
             x, y = self.wheys.get_pos()
 
+            if self.player.out_of_bounds():
+                status = False
+
+
             if self.player.is_colliding(x,y):
-                print('encostou')
+                self.score += 1
+                self.wheys.change_pos()
+                self.player.increase_snake()
                 # contar score, apagar o whey e renderizar outro, aumentar uma cobra
-            else:
-                time.sleep(.1)
-                print("minhoca", x,y)
-                print("maça",self.player.x[0],self.player.y[0] )
+
 
             self.player.move_player(last_direction)
             self.wheys.render_obj()
+            self.show_score()
+            pygame.display.flip()
             time.sleep(0.3)
-
+    
+        self.main_menu(is_lost=True)
 
 
 class Entity:
@@ -91,9 +108,9 @@ class Entity:
         self.texture = pygame.image.load(src).convert()
 
     def render_obj(self):
-        self.screen.fill((140, 68, 98))    
+        self.screen.fill(BACKGROUND_COLOR)    
         self.screen.blit(self.texture, (self.x, self.y))
-        pygame.display.flip()
+        # pygame.display.flip()
 
     def compare_pos(self, x1, y1):
         return self.x == x1 and self.y == y1
@@ -102,8 +119,8 @@ class Entity:
 class Whey(Entity):
     
     def __init__(self, screen, src='snake/resources/whey.png', x=4, y=4):
-        self.x = randint(10, (SCREEN_SIZE/4) - 10) * x
-        self.y = randint(10, (SCREEN_SIZE/4) - 10) * y
+        self.x = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
+        self.y = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
 
         super().__init__(screen, src, self.x, self.y)
 
@@ -114,16 +131,34 @@ class Whey(Entity):
     def get_pos(self):
         return (self.x, self.y)
 
+    def change_pos(self):
+
+        new_x = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
+        new_y = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
+
+        while self.compare_pos(new_x, new_y):
+            new_x = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
+            new_y = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
+
+        self.x = new_x
+        self.y = new_y
+
+        self.render_obj()
 
 class Snake(Entity):
 
-    def __init__(self, screen, src='snake/resources/minhoca.png', x=15, y=15, length=4):
+    def __init__(self, screen, src='snake/resources/m3.png', head_text= 'snake/resources/m2.png', x=15, y=15, length=2):
         super().__init__(screen, src, [IMG_SIZE] * length, [IMG_SIZE] * length)
         self.snake_size = length
+        self.head_texture = pygame.image.load(head_text).convert()
+        
 
     def render_obj(self):
-        self.screen.fill((140, 68, 98))
-        for i in range(self.snake_size):
+        self.screen.fill(BACKGROUND_COLOR)
+
+        self.screen.blit(self.head_texture, (self.x[0], self.y[0]))
+
+        for i in range(2, self.snake_size):
             self.screen.blit(self.texture, (self.x[i], self.y[i]))
 
         pygame.display.flip()
@@ -131,12 +166,17 @@ class Snake(Entity):
 
     def is_colliding(self, x, y):
         
-        if self.x[0] >= x and self.x[0] <= x + IMG_SIZE and self.y[0] >= y and self.y[0] <= y + IMG_SIZE:
+        if self.x[0] >= x and self.x[0] <= x + IMG_SIZE*.9 and self.y[0] >= y and self.y[0] <= y + IMG_SIZE*.9:
             return True
 
         return False
 
-    def move_player(self, direction, dx = 40):
+    def out_of_bounds(self):
+        if self.x[0] < 0 or self.x[0] > SCREEN_SIZE or self.y[0] < 0 or self.y[0] > SCREEN_SIZE:
+            return True
+        return False
+
+    def move_player(self, direction, dx = IMG_SIZE):
 
         if direction == 97:
             self.x[0] -= dx
@@ -156,6 +196,11 @@ class Snake(Entity):
         
         self.render_obj()
         
+    def increase_snake(self):
+        self.x.append(-1)
+        self.y.append(-1)
+        self.snake_size += 1
+
 
 if __name__ == "__main__":
 
