@@ -82,13 +82,13 @@ class Game:
             if self.player.out_of_bounds():
                 status = False
 
+            if self.player.kills_itself():
+                status = False
 
             if self.player.is_colliding(x,y):
                 self.score += 1
                 self.wheys.change_pos()
                 self.player.increase_snake()
-                # contar score, apagar o whey e renderizar outro, aumentar uma cobra
-
 
             self.player.move_player(last_direction)
             self.wheys.render_obj()
@@ -101,7 +101,7 @@ class Game:
 
 class Entity:
 
-    def __init__(self, screen, src='snake/resources/me.png', x=0, y=0):
+    def __init__(self, screen, src='resources/whey.png', x=0, y=0):
         self.x = x
         self.y = y
         self.screen = screen
@@ -118,7 +118,7 @@ class Entity:
 
 class Whey(Entity):
     
-    def __init__(self, screen, src='snake/resources/whey.png', x=4, y=4):
+    def __init__(self, screen, src='resources/whey.png', x=4, y=4):
         self.x = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
         self.y = randint(1, (SCREEN_SIZE/IMG_SIZE) - 1) * IMG_SIZE
 
@@ -142,20 +142,18 @@ class Whey(Entity):
 
         self.x = new_x
         self.y = new_y
-
         self.render_obj()
 
 class Snake(Entity):
 
-    def __init__(self, screen, src='snake/resources/m3.png', head_text= 'snake/resources/m2.png', x=15, y=15, length=2):
+    def __init__(self, screen, src='resources/m3.png', head_text= 'resources/m2.png', x=15, y=15, length=2):
         super().__init__(screen, src, [IMG_SIZE] * length, [IMG_SIZE] * length)
         self.snake_size = length
         self.head_texture = pygame.image.load(head_text).convert()
         
-
     def render_obj(self):
+        
         self.screen.fill(BACKGROUND_COLOR)
-
         self.screen.blit(self.head_texture, (self.x[0], self.y[0]))
 
         for i in range(2, self.snake_size):
@@ -163,6 +161,12 @@ class Snake(Entity):
 
         pygame.display.flip()
 
+    def kills_itself(self):
+        for i in range(3, self.snake_size):
+            if self.is_colliding(self.x[i], self.y[i]):
+                return True
+    
+        return False
 
     def is_colliding(self, x, y):
         
@@ -172,7 +176,7 @@ class Snake(Entity):
         return False
 
     def out_of_bounds(self):
-        if self.x[0] < 0 or self.x[0] > SCREEN_SIZE or self.y[0] < 0 or self.y[0] > SCREEN_SIZE:
+        if self.x[0] < 0 or self.x[0] >= SCREEN_SIZE or self.y[0] < 0 or self.y[0] >= SCREEN_SIZE:
             return True
         return False
 
